@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Soutenances - CRUD</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Gestion des Soutenances - CRUD</h1>
+
+        <div id="student-form">
+            <h2>Ajouter un étudiant</h2>
+            <input type="text" id="student-name" placeholder="Nom de l'étudiant">
+            <label for="student-class">Choisir une classe :</label>
+            <select id="student-class" name="student-class">
+                <option value="classe1">Classe 1</option>
+                <option value="classe2">Classe 2</option>
+                <option value="classe3">Classe 3</option>
+            </select>
+            <button id="add-student">Ajouter</button>
+        </div>
+
+        <div id="students-list">
+            <h2>Liste des étudiants</h2>
+            <ul id="students"></ul>
+        </div>
+
+        <div id="defense-section">
+            <h2>Soutenances</h2>
+            <input type="text" id="defense-name" placeholder="Nom de la soutenance">
+            <button id="create-defense">Créer une soutenance</button>
+            <ul id="defenses"></ul>
+        </div>
+
+        <div id="delete-student-section">
+            <h2>Supprimer un étudiant</h2>
+            <input type="text" id="student-to-delete" placeholder="Nom de l'étudiant à supprimer">
+            <button id="delete-student">Supprimer</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

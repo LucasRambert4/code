@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Au tableau</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Au tableau</h1>
+
+        <!-- Formulaire de création de classes -->
+        <div class="section">
+            <h2>Formulaire de création d'une Classe</h2>
+            <form id="classForm">
+                <label for="className">Nom de la classe:</label>
+                <input type="text" id="className" placeholder="Nom de la classe" required>
+                <button type="submit">Créer</button>
+            </form>
+            <ul id="classList"></ul>
+        </div>
+
+        <!-- Formulaire d'ajout d'étudiants -->
+        <div class="section">
+            <h2>Formulaire d'ajout d'un étudiant dans une classe</h2>
+            <form id="studentForm">
+                <label for="name">Nom de l'étudiant:</label>
+                <input type="text" id="name" placeholder="Nom de l'étudiant" required>
+                
+                <label for="classDropdown">Classe:</label>
+                <select id="classDropdown" required>
+                    <option value="">Sélectionner une classe</option>
+                </select>
+                <button type="submit" id="submitButton">Ajouter</button>
+            </form>
+            <ul id="studentList"></ul>
+        </div>
+
+        <!-- Formulaire d'ajout d'étudiants au tableau -->
+        <div class="section">
+            <h2>Formulaire d'envoi d'un étudiant au tableau</h2>
+            
+            <div class="button-container">
+                <button id="addRandomStudentBtn">Envoyer un étudiant au tableau</button>
+            </div>
+        
+            <div class="student-container">
+                <div class="not-in-tableau">
+                    <h3>Étudiants pas encore au tableau</h3>
+                    <ul id="studentList2"></ul>
+                </div>
+        
+                <div class="in-tableau">
+                    <h3>Étudiants au tableau</h3>
+                    <ul id="tableauList"></ul>
+                </div>                
+            </div>
+        </div>
+        
+
+        <!-- Modal pour modifier un étudiant -->
+        <div id="editStudentModal" class="modal">
+            <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Modifier l'étudiant</h2>
+        
+            <form id="editStudentForm">
+                <label for="studentName">Nom de l'étudiant:</label>
+                <input type="text" id="studentName" name="studentName" required>
+        
+                <label for="studentClass">Classe:</label>
+                <select id="studentClass" name="studentClass" required>
+                <!-- Les classes seront ajoutées ici dynamiquement -->
+                </select>
+        
+                <button type="submit">Enregistrer</button>
+            </form>
+            </div>
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+server.js:
+// importer express
+const express = require('express');
+const mysql = require('mysql');
+const path = require('path');
+const app = express();
+
+// Middleware pour gérer les données JSON envoyées dans les requêtes POST
+app.use(express.json());
+// Middleware pour servir des fichiers statiques (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public')));
+// Connexion à la base de données
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'luxar123', // N'oublie pas de vérifier ton mot de passe
+  database: 'gestion_soutenances'
+});
+// Connecter à MySQL
+connection.connect((err) => {
+  if (err) {
+    console.error('Erreur de connexion à la base de données:', err);
+    process.exit(1); // Quitter le processus si la connexion échoue
+  }
+  console.log('Connecté à la base de données MySQL');
+});
+// Définir une route GET pour la racine "/"
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html')); // Envoie le fichier HTML
+});
+
+
+
+// Route pour obtenir tous les étudiants avec le nom de leur classe
+app.get('/students', (req, res) => {
+  const query = `
+    SELECT e.id, e.name, c.name AS className 
+    FROM etudiants e 
+    JOIN classes c ON e.classId = c.id
+  `;
+  
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Erreur lors de la récupération des étudiants:', err);
+      return res.status(500).json({ error: 'Erreur lors de la récupération des étudiants.' });
+    }
+    res.json(results);
+  });
+});
+// Route pour ajouter un nouvel étudiant
+app.post('/students', (req, res) => {
+  const { name, classId } = req.body; // Récupérer name et classId
+
+  // Vérifier que les champs ne sont pas vides
+  if (!name || !classId) {
+    return res.status(400).json({ error: 'Le nom et l\'ID de la classe sont requis.' });
+  }
+
+  // D'abord, récupérons le className correspondant à classId
+  const getClassNameQuery = 'SELECT name FROM classes WHERE id = ?';
+  connection.query(getClassNameQuery, [classId], (err, results) => {
+    if (err) {
+      console.error('Erreur lors de la récupération du nom de la classe:', err);
+      return res.status(500).json({ error: 'Erreur lors de la récupération du nom de la classe.' });
+    }
+    
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Classe non trouvée.' });
+    }
+
+    const className = results[0].name; // Récupérer le className
+
+    // Maintenant, insérer l'étudiant avec className
+    const insertStudentQuery = 'INSERT INTO etudiants (name, className, classId) VALUES (?, ?, ?)';
+    connection.query(insertStudentQuery, [name, className, classId], (err, results) => {
+      if (err) {
+        console.error('Erreur lors de l\'ajout de l\'étudiant:', err);
+        return res.status(500).json({ error: 'Erreur lors de l\'ajout de l\'étudiant.' });
+      }
+      res.json({ id: results.insertId, name, className, classId });
+    });
+  });
+});
+// Route pour obtenir toutes les classes
+app.get('/classes', (req, res) => {
+  const query = 'SELECT * FROM classes';
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Erreur lors de la récupération des classes:', err);
+      return res.status(500).json({ error: 'Erreur lors de la récupération des classes.' });
+    }
+    res.json(results);
+  });
+});
+// Route pour ajouter une nouvelle classe
+app.post('/classes', (req, res) => {
+  const { name } = req.body;
+
+  // Vérifiez que le nom n'est pas vide
+  if (!name) {
+    return res.status(400).json({ error: 'Le nom de la classe est requis.' });
+  }
+
+  const query = 'INSERT INTO classes (name) VALUES (?)';
+  connection.query(query, [name], (err, results) => {
+    if (err) {
+      console.error('Erreur lors de l\'ajout de la classe:', err);
+      return res.status(500).json({ error: 'Erreur lors de l\'ajout de la classe.' });
+    }
+    res.json({ id: results.insertId, name });
+  });
+});
+
+
+
+// Route pour supprimer un étudiant
+app.delete('/students/:id', (req, res) => {
+  const studentId = req.params.id;
+  const query = 'DELETE FROM etudiants WHERE id = ?';
+  connection.query(query, [studentId], (err, results) => {
+      if (err) {
+        console.error('Erreur lors de la suppression de l\'étudiant:', err);
+        return res.status(500).json({ error: 'Erreur lors de la suppression de l\'étudiant.' });
+      }
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ error: 'Étudiant non trouvé.' });
+      }
+      res.sendStatus(204); // Pas de contenu
+  });
+});
+//route pour supprimer une classe
+app.delete('/classes/:id', (req, res) => {
+  const classId = req.params.id;
+
+  // Requête SQL pour supprimer la classe par son ID
+  const sql = 'DELETE FROM classes WHERE id = ?';
+  connection.query(sql, [classId], (error, results) => {
+      if (error) {
+          console.error('Erreur lors de la suppression de la classe:', error);
+          return res.status(500).json({ error: 'Erreur lors de la suppression de la classe' });
+      }
+      // Vérifiez si des lignes ont été supprimées
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ error: 'Classe non trouvée' });
+      }
+      // Renvoie un statut 204 No Content si la suppression a réussi
+      res.status(204).send();
+  });
+});
+
+
+
+// Spécifier le port d'écoute (par défaut 3000)
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Serveur en ligne sur le port ${port}`);
+});
+
+
+script.js:
+//listeners:
+//-------------
+//pour ajouter une classe
+document.getElementById('classForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const className = document.getElementById('className').value;
+
+    // Envoyer la requête POST pour ajouter une classe
+    fetch('/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: className })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Erreur lors de l\'ajout de la classe');
+        return response.json();
+    })
+    .then(data => {
+        console.log('Classe ajoutée:', data);
+        loadClasses(); // Recharger la liste des classes
+        document.getElementById('classForm').reset(); // Réinitialiser le formulaire
+        location.reload(); // Rafraîchir la page
+    })
+    .catch(error => console.error('Erreur:', error));
+});
+//pour ajouter un etudiant
+document.getElementById('studentForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const classId = document.getElementById('classDropdown').value;
+
+    fetch('/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, classId })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Erreur lors de l\'ajout de l\'étudiant');
+        return response.json();
+    })
+    .then(data => {
+        console.log('Étudiant ajouté:', data);
+        loadStudents(); // Recharger la liste des étudiants
+        document.getElementById('studentForm').reset(); // Réinitialiser le formulaire
+        closeModal(); // Fermer le modal après l'enregistrement réussi
+    })
+    .catch(error => console.error('Erreur:', error));
+});
+//
+//
+
+//
+//pour supprimer un etudiant
+function deleteStudent(studentId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet étudiant ?')) {
+        return; // Annule la suppression si l'utilisateur ne confirme pas
+    }
+
+    fetch(`/students/${studentId}`, { method: 'DELETE' })
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur lors de la suppression de l\'étudiant');
+            loadStudents(); // Recharger la liste des étudiants
+        })
+        .catch(error => console.error('Erreur:', error));
+}
+//pour supprimer une classe
+function deleteClass(classId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette classe ?')) {
+        return; // Annule la suppression si l'utilisateur ne confirme pas
+    }
+
+    fetch(`/classes/${classId}`, {
+        method: 'DELETE', // Utilise la méthode DELETE
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur lors de la suppression de la classe');
+        }
+        // Recharger les classes après suppression
+        loadClasses(); // Recharger la liste pour afficher les changements
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+//pour charger les classes dans un dropdown
+function loadClassesInDropdown(dropdown) {
+    dropdown.innerHTML = '';
+    fetch('/classes')
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur lors du chargement des classes');
+            return response.json();
+        })
+        .then(data => {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Sélectionner une classe';
+            dropdown.appendChild(defaultOption);
+            data.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id;
+                option.textContent = cls.name;
+                dropdown.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erreur:', error));
+}
+//
+//fonction pour voir les classes et les etudiants:
+//
+//pour charger les classes
+function loadClasses() {
+    fetch('/classes')
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur lors du chargement des classes');
+            return response.json(); // Get JSON directly
+        })
+        .then(data => {
+            // Populate class list
+            const classList = document.getElementById('classList');
+            if (classList) {
+                classList.innerHTML = ''; // Clear the list before populating
+                data.forEach(cls => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        ${cls.name}
+                        <button onclick="deleteClass(${cls.id})" aria-label="Supprimer la classe ${cls.name}">Supprimer</button>`;
+                    classList.appendChild(li);
+                });
+            }
+
+            // Populate dropdown
+            const classDropdown = document.getElementById('classDropdown');
+            if (classDropdown) {
+                classDropdown.innerHTML = '<option value="">Sélectionner une classe</option>'; // Reset dropdown
+                data.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    classDropdown.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+}
+//pour charger les etudiants
+function loadStudents() {
+    fetch('/students')
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur lors du chargement des étudiants');
+            return response.json(); // Change to JSON
+        })
+        .then(data => {
+            const studentList = document.getElementById('studentList');
+            if (!studentList) return;
+            studentList.innerHTML = ''; // Clear the list before populating
+            data.forEach(student => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ${student.name} - Classe: ${student.className}
+                    <button onclick="deleteStudent(${student.id})" aria-label="Supprimer l'étudiant ${student.name}">Supprimer</button>`;
+                studentList.appendChild(li);
+            });
+        })
+        .catch(error => console.error('Erreur:', error));
+}
+//pour activer les fonctions
+window.onload = () => {
+    loadStudents();
+    loadClasses();
+    loadClasses();
+};
+
+index.html:
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Au tableau</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Au tableau</h1>
+
+        <!-- Formulaire de création de classes -->
+        <div class="section">
+            <h2>Formulaire de création d'une Classe</h2>
+            <form id="classForm">
+                <label for="className">Nom de la classe:</label>
+                <input type="text" id="className" placeholder="Nom de la classe" required>
+                <button type="submit">Créer</button>
+            </form>
+            <ul id="classList"></ul>
+        </div>
+
+        <!-- Formulaire d'ajout d'étudiants -->
+        <div class="section">
+            <h2>Formulaire d'ajout d'un étudiant dans une classe</h2>
+            <form id="studentForm">
+                <label for="name">Nom de l'étudiant:</label>
+                <input type="text" id="name" placeholder="Nom de l'étudiant" required>
+                
+                <label for="classDropdown">Classe:</label>
+                <select id="classDropdown" required>
+                    <option value="">Sélectionner une classe</option>
+                </select>
+                <button type="submit" id="submitButton">Ajouter</button>
+            </form>
+            <ul id="studentList"></ul>
+        </div>
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+
+okay, voici ce que jai pour mon application node.js avec express et mysql, maintenant jaimerai avoir des APIs, mon html sera ca et chaque bouton appelera un des API qui va apparaitre pour etre executer, le choix de lun fera disparaitre lautre
